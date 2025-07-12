@@ -54,12 +54,6 @@ def is_telegram(link):
 
 def is_torrent(link):
     return "magnet" in link or "torrent" in link
-
-def compress_resolution(input_file, output_file, resolution):
-    ffmpeg.input(input_file).output(output_file, vf=f"scale=-2:{resolution}").run(overwrite_output=True)
-
-def extract_audio(input_file, output_file):
-    ffmpeg.input(input_file).output(output_file, format='mp3', acodec='libmp3lame').run(overwrite_output=True)
         
 def getTime(seconds):
     seconds = int(seconds)
