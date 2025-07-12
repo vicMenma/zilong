@@ -1,5 +1,4 @@
 import os
-import ffmpeg
 import math
 import psutil
 import logging
