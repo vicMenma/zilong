@@ -37,33 +37,6 @@ async def telegram_upload(client, message):
 
     src_request_msg = await task_starter(message, text)
 
-user_video_files = {}
-
-@colab_bot.on_message(filters.video & filters.private)
-async def store_video_file(client, message):
-    file_path = await message.download(file_name="user_video.mp4")
-    user_video_files[message.from_user.id] = file_path
-    await message.reply_text(
-        "✅ Video received!\nNow type `/convert` to choose output quality.",
-        quote=True
-    )  
-    
-@colab_bot.on_message(filters.command("convert") & filters.private)
-async def ask_for_compression_quality(client, message):
-    user_id = message.from_user.id
-    if user_id not in user_video_files:
-        await message.reply_text("❌ No video found. Please send a video first.")
-        return
-
-    buttons = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔻 Compress to 720p", callback_data="compress_720")],
-        [InlineKeyboardButton("🔻 Compress to 480p", callback_data="compress_480")],
-        [InlineKeyboardButton("🔻 Compress to 360p", callback_data="compress_360")],
-    ])
-
-    await message.reply_text("🎯 Choose compression resolution:", reply_markup=buttons)
-  
-
 @colab_bot.on_message(filters.command("ytupload") & filters.private)
 async def yt_upload(client, message):
     global BOT, src_request_msg
@@ -73,7 +46,6 @@ async def yt_upload(client, message):
     text = "<b>⚡ Send YTDL DOWNLOAD LINK(s) 🔗»"
 
     src_request_msg = await task_starter(message, text)
-
 
 @colab_bot.on_message(filters.command("settings") & filters.private)
 async def settings(client, message):
