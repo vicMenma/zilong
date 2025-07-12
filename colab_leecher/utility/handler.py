@@ -4,7 +4,6 @@ import logging
 import pathlib
 from asyncio import sleep
 from time import time
-from helper import compress_resolution
 from colab_leecher import OWNER, colab_bot
 from natsort import natsorted
 from datetime import datetime
