@@ -292,31 +292,6 @@ async def SendLogs(is_leech: bool):
                 Err = f"<b>Error Sending logs » </b><i>{e}</i>"
                 Err += f"\n\n<i>⚠️ If You are Unknown with this **ERROR**, Then Forward This Message to https://t.me/kingkum1</i>"
                 await MSG.status_msg.reply_text(text=Err)
-
-user_video_files = {}
-
-@colab_bot.on_callback_query()
-async def compression_callback(client, callback_query):
-    user_id = callback_query.from_user.id
-    if user_id not in user_video_files:
-        await callback_query.message.edit_text("❌ No video stored. Please upload one.")
-        return
-
-    input_file = user_video_files[user_id]
-    resolution = callback_query.data.split("_")[1]
-    output_file = f"compressed_{resolution}p.mp4"
-
-    await callback_query.message.edit_text(f"🔧 Compressing to {resolution}p...")
-
-    try:
-        compress_resolution(input_file, output_file, resolution)
-        await callback_query.message.reply_video(output_file, caption=f"✅ Compressed to {resolution}p.")
-    except Exception as e:
-        await callback_query.message.reply_text(f"❌ Error: {e}")
-    finally:
-        os.remove(input_file)
-        os.remove(output_file)
-        user_video_files.pop(user_id, None)
         
 
     BOT.State.started = False
