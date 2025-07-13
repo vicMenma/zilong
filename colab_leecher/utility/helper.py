@@ -230,7 +230,7 @@ def sysINFO():
     disk_usage = psutil.disk_usage("/")
     cpu_usage_percent = psutil.cpu_percent()
 
-    string = "\n\n⌬─────「 Colab Usage 」─────⌬\n"
+    string = "\n\n⌬─────「 Usage 」─────⌬\n"
     string += f"\n╭🖥️ **CPU Usage »**  __{cpu_usage_percent}%__"
     string += f"\n├💽 **RAM Usage »**  __{sizeUnit(ram_usage)}__"
     string += f"\n╰💾 **DISK Free »**  __{sizeUnit(disk_usage.free)}__"
