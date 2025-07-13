@@ -46,13 +46,8 @@ async def task_starter(message, text):
         src_request_msg = await message.reply_text(text)
         return src_request_msg
     else:
-        msg = await message.reply_text(
-            "I am already working ! Please wait until I finish !!"
-        )
-        await sleep(15)
-        await msg.delete()
-        return None
-
+        src_request_msg = await message.reply_text(text)
+        return src_request_msg
 
 async def taskScheduler():
     global BOT, MSG, BotTimes, Messages, Paths, Transfer, TaskError
