@@ -2,15 +2,15 @@
 
 # @title Main Code
 # @markdown <div><center><img src="" height=80></center></div>
-# @markdown <center><h4><a href="https://github.com/XronTrix10/Telegram-Leecher/wiki/INSTRUCTIONS">READ</a> How to use</h4></center>
+# @markdown <center><h4><a>READ</a> How to use</h4></center>
 
 # @markdown <br>
 
-API_ID = 0  # @param {type: "integer"}
+API_ID =   # @param {type: "integer"}
 API_HASH = ""  # @param {type: "string"}
 BOT_TOKEN = ""  # @param {type: "string"}
-USER_ID = 0  # @param {type: "integer"}
-DUMP_ID = 0  # @param {type: "integer"}
+USER_ID =   # @param {type: "integer"}
+DUMP_ID = ""  # @param {type: "string"}
 
 
 import subprocess, time, json, shutil, os
@@ -19,29 +19,22 @@ from threading import Thread
 
 Working = True
 
+
 banner = '''
-
-   ________  ___   ___   ______   ________   ________  ________  ________     
-  |\   __  \|\  \ |\  \ |\  ___ \|\   __  \ |\   __  \|\   __  \|\   ___  \   
-  \ \  \|\  \ \  \\_\  \\ \   __/\ \  \|\  \\ \  \|\  \ \  \|\  \ \  \\ \  \  
-   \ \   __  \ \______  \\ \  \_|/_\ \  \\\  \\ \   __  \ \  \\\  \ \  \\ \  \ 
-    \ \  \ \  \|_____|\  \\ \  \_|\ \ \  \\\  \\ \  \ \  \ \  \\\  \ \  \\ \  \
-     \ \__\ \__\     \ \__\\ \_______\ \_______\\ \__\ \__\ \_______\ \__\\ \__\
-      \|__|\|__|      \|__| \|_______|\|_______| \|__|\|__|\|_______|\|__| \|__|
-
-            ______   ___       ___  ________  ________  ________     
-           |\  ___ \|\  \     |\  \|\   __  \|\   __  \|\   __  \    
-           \ \   __/\ \  \    \ \  \ \  \|\  \ \  \|\  \ \  \|\  \   
-            \ \  \_|/_\ \  \  __\ \  \ \   ____\ \  \\\  \ \  \\\  \  
-             \ \  \_|\ \ \  \|\__\_\  \ \  \___|\ \  \\\  \ \  \\\  \ 
-              \ \_______\ \____________\ \__\    \ \_______\ \_______\
-               \|_______|\|____________|\|__|     \|_______|\|_______|
- 
-
-                                                
-
+ ███████╗██╗██╗██╗      ██████╗ ███╗   ██╗ ██████╗ 
+ ╚══███╔╝██║██║██║     ██╔═══██╗████╗  ██║██╔════╝ 
+   ███╔╝ ██║██║██║     ██║   ██║██╔██╗ ██║██║  ███╗
+  ███╔╝  ██║██║██║     ██║   ██║██║╚██╗██║██║   ██║
+ ███████╗██║██║███████╗╚██████╔╝██║ ╚████║╚██████╔╝
+ ╚══════╝╚═╝╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝ 
+                                                    
+  ██████╗ ██████╗ ██████╗ ███████╗                 
+ ██╔════╝██╔═══██╗██╔══██╗██╔════╝                 
+ ██║     ██║   ██║██║  ██║█████╗                   
+ ██║     ██║   ██║██║  ██║██╔══╝                   
+ ╚██████╗╚██████╔╝██████╔╝███████╗                 
+  ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝                 
 '''
-
 print(banner)
 
 def Loading():
@@ -65,11 +58,11 @@ if len(str(DUMP_ID)) == 10 and "-100" not in str(DUMP_ID):
 if os.path.exists("/content/sample_data"):
     shutil.rmtree("/content/sample_data")
 
-cmd = "git clone https://github.com/XronTrix10/Telegram-Leecher"
+cmd = "git clone https://github.com/vicMenma/zilong.git"
 proc = subprocess.run(cmd, shell=True)
 cmd = "apt update && apt install ffmpeg aria2"
 proc = subprocess.run(cmd, shell=True)
-cmd = "pip3 install -r /content/Telegram-Leecher/requirements.txt"
+cmd = "pip3 install -r /content/zilong/requirements.txt"
 proc = subprocess.run(cmd, shell=True)
 
 credentials = {
@@ -80,14 +73,14 @@ credentials = {
     "DUMP_ID": DUMP_ID,
 }
 
-with open('/content/Telegram-Leecher/credentials.json', 'w') as file:
+with open('/content/zilong/credentials.json', 'w') as file:
     file.write(json.dumps(credentials))
 
 Working = False
 
-if os.path.exists("/content/Telegram-Leecher/my_bot.session"):
-    os.remove("/content/Telegram-Leecher/my_bot.session") # Remove previous bot session
-    
+if os.path.exists("/content/zilong/my_bot.session"):
+    os.remove("/content/zilong/my_bot.session") # Remove previous bot session
+
 print("\rStarting Bot....")
 
-!cd /content/Telegram-Leecher/ && python3 -m colab_leecher #type:ignore
+!cd /content/zilong && python3 -m colab_leecher #type:ignore
