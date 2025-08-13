@@ -6,10 +6,10 @@
 
 # @markdown <br>
 
-API_ID =   # @param {type: "integer"}
+API_ID = 0  # @param {type: "integer"}
 API_HASH = ""  # @param {type: "string"}
 BOT_TOKEN = ""  # @param {type: "string"}
-USER_ID =   # @param {type: "integer"}
+USER_ID = 0  # @param {type: "integer"}
 DUMP_ID = ""  # @param {type: "string"}
 
 
