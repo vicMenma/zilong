@@ -1,8 +1,7 @@
 # colab_leecher/__init__.py
-
-import asyncio
 import json
 import logging
+import asyncio
 from pathlib import Path
 
 from uvloop import install
@@ -23,24 +22,24 @@ def load_credentials(path: Path = CREDENTIALS_PATH) -> dict:
         raise FileNotFoundError(f"Credentials file not found: {path}")
 
     with path.open("r", encoding="utf-8") as f:
-        data = json.load(f)
+        creds = json.load(f)
 
     required_keys = ["API_ID", "API_HASH", "BOT_TOKEN", "USER_ID", "DUMP_ID"]
-    missing = [k for k in required_keys if k not in data]
+    missing = [k for k in required_keys if k not in creds]
     if missing:
-        raise KeyError(f"Missing keys in credentials file: {missing}")
+        raise KeyError(f"Missing keys in credentials.json: {missing}")
 
-    return data
+    return creds
 
 
 # Load credentials
 credentials = load_credentials()
 
-API_ID = credentials["API_ID"]
-API_HASH = credentials["API_HASH"]
-BOT_TOKEN = credentials["BOT_TOKEN"]
-OWNER = credentials["USER_ID"]
-DUMP_ID = credentials["DUMP_ID"]
+API_ID = int(credentials["API_ID"])
+API_HASH = str(credentials["API_HASH"])
+BOT_TOKEN = str(credentials["BOT_TOKEN"])
+OWNER = int(credentials["USER_ID"])
+DUMP_ID = int(credentials["DUMP_ID"])
 
 log.info("Credentials loaded successfully")
 
