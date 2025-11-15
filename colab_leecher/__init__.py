@@ -1,4 +1,6 @@
-import logging, json
+import logging
+import json
+import asyncio
 from uvloop import install
 from pyrogram.client import Client
 
@@ -12,9 +14,18 @@ BOT_TOKEN = credentials["BOT_TOKEN"]
 OWNER = credentials["USER_ID"]
 DUMP_ID = credentials["DUMP_ID"]
 
-
 logging.basicConfig(level=logging.INFO)
 
+# Install uvloop as the event loop policy
 install()
 
-colab_bot = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# 🔥 Create and set an event loop for the main thread
+asyncio.set_event_loop(asyncio.new_event_loop())
+
+# Now it's safe to create the Pyrogram client
+colab_bot = Client(
+    "my_bot",
+    api_id=API_ID,
+    api_hash=API_HASH,
+    bot_token=BOT_TOKEN
+)
