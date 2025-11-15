@@ -3,23 +3,22 @@
 # @title Main Code
 # @markdown <div><center><img src="" height=80></center></div>
 # @markdown <center><h4><a>READ</a> How to use</h4></center>
+
 # @markdown <br>
 
-API_ID = 0        # @param {type: "integer"}
-API_HASH = ""     # @param {type: "string"}
-BOT_TOKEN = ""    # @param {type: "string"}
-USER_ID = 0       # @param {type: "integer"}
-DUMP_ID = ""      # @param {type: "string"}
+API_ID = 0  # @param {type: "integer"}
+API_HASH = ""  # @param {type: "string"}
+BOT_TOKEN = ""  # @param {type: "string"}
+USER_ID = 0  # @param {type: "integer"}
+DUMP_ID = ""  # @param {type: "string"}
 
-import os
-import time
-import json
-import shutil
-import subprocess
-from threading import Thread
+
+import subprocess, time, json, shutil, os
 from IPython.display import clear_output
+from threading import Thread
 
 Working = True
+
 
 banner = '''
  ███████╗██╗██╗██╗      ██████╗ ███╗   ██╗ ██████╗ 
@@ -38,51 +37,34 @@ banner = '''
 '''
 print(banner)
 
-
 def Loading():
     white = 37
     black = 0
     while Working:
-        print("\r" + "░" * white + "▒▒" + "▓" * black + "▒▒" + "░" * white, end="")
+        print("\r" + "░"*white + "▒▒"+ "▓"*black + "▒▒" + "░"*white, end="")
         black = (black + 2) % 75
-        white = (white - 1) if white != 0 else 37
+        white = (white -1) if white != 0 else 37
         time.sleep(2)
     clear_output()
 
 
-_thread = Thread(target=Loading, name="Prepare", args=())
-_thread.start()
+_Thread = Thread(target=Loading, name="Prepare", args=())
+_Thread.start()
 
-# Normalize DUMP_ID to -100xxxxxxxxxx format if needed
 if len(str(DUMP_ID)) == 10 and "-100" not in str(DUMP_ID):
-    DUMP_ID = int("-100" + str(DUMP_ID))
+    n_dump = "-100" + str(DUMP_ID)
+    DUMP_ID = int(n_dump)
 
-# Clean default Colab sample folder
 if os.path.exists("/content/sample_data"):
     shutil.rmtree("/content/sample_data")
 
-# Clone repo (if already exists, you can delete or skip manually)
-subprocess.run(
-    "git clone https://github.com/vicMenma/zilong.git",
-    shell=True,
-    check=True,
-)
+cmd = "git clone https://github.com/vicMenma/zilong.git"
+proc = subprocess.run(cmd, shell=True)
+cmd = "apt update && apt install ffmpeg aria2"
+proc = subprocess.run(cmd, shell=True)
+cmd = "pip3 install -r /content/zilong/requirements.txt"
+proc = subprocess.run(cmd, shell=True)
 
-# Install system dependencies
-subprocess.run(
-    "apt update && apt install -y ffmpeg aria2",
-    shell=True,
-    check=True,
-)
-
-# Install Python dependencies
-subprocess.run(
-    "pip3 install -r /content/zilong/requirements.txt",
-    shell=True,
-    check=True,
-)
-
-# Write credentials for colab_leecher/__init__.py
 credentials = {
     "API_ID": API_ID,
     "API_HASH": API_HASH,
@@ -91,24 +73,14 @@ credentials = {
     "DUMP_ID": DUMP_ID,
 }
 
-os.makedirs("/content/zilong", exist_ok=True)
-with open("/content/zilong/credentials.json", "w", encoding="utf-8") as file:
-    json.dump(credentials, file)
+with open('/content/zilong/credentials.json', 'w') as file:
+    file.write(json.dumps(credentials))
 
-# Stop loading animation
 Working = False
-_thread.join(timeout=2)
 
-# Remove previous bot session if any
-session_file = "/content/zilong/my_bot.session"
-if os.path.exists(session_file):
-    os.remove(session_file)
+if os.path.exists("/content/zilong/my_bot.session"):
+    os.remove("/content/zilong/my_bot.session") # Remove previous bot session
 
 print("\rStarting Bot....")
 
-# Start bot as a normal subprocess (no notebook magic)
-subprocess.run(
-    ["python3", "-m", "colab_leecher"],
-    cwd="/content/zilong",
-    check=True,
-)
+!cd /content/zilong && python3 -m colab_leecher #type:ignore
