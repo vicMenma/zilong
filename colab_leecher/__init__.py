@@ -1,40 +1,14 @@
-# colab_leecher/__init__.py
-
-import asyncio
-import json
 import logging
-from pathlib import Path
-
-from uvloop import install
+import json
+import asyncio
+import uvloop
 from pyrogram.client import Client
 
-log = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] [%(levelname)s] %(name)s: %(message)s",
-)
-
-CREDENTIALS_PATH = Path("/content/zilong/credentials.json")
-
-
-def load_credentials(path: Path = CREDENTIALS_PATH) -> dict:
-    """Load and validate credentials from JSON file."""
-    if not path.exists():
-        raise FileNotFoundError(f"Credentials file not found: {path}")
-
-    with path.open("r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    required_keys = ["API_ID", "API_HASH", "BOT_TOKEN", "USER_ID", "DUMP_ID"]
-    missing = [k for k in required_keys if k not in data]
-    if missing:
-        raise KeyError(f"Missing keys in credentials file: {missing}")
-
-    return data
-
-
-# Load credentials
-credentials = load_credentials()
+# ─────────────────────────────────────────
+# Load credentials from JSON
+# ─────────────────────────────────────────
+with open("/content/zilong/credentials.json", "r") as file:
+    credentials = json.load(file)
 
 API_ID = credentials["API_ID"]
 API_HASH = credentials["API_HASH"]
@@ -42,16 +16,19 @@ BOT_TOKEN = credentials["BOT_TOKEN"]
 OWNER = credentials["USER_ID"]
 DUMP_ID = credentials["DUMP_ID"]
 
-log.info("Credentials loaded successfully")
+logging.basicConfig(level=logging.INFO)
 
-# Use uvloop as event loop policy
-install()
-
-# Explicitly create and set an event loop for the main thread
+# ─────────────────────────────────────────
+# Proper uvloop + event loop setup
+# (fixes: RuntimeError: There is no current event loop in thread 'MainThread')
+# ─────────────────────────────────────────
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
-# Create Pyrogram client using the current loop
+# ─────────────────────────────────────────
+# Create Pyrogram client
+# ─────────────────────────────────────────
 colab_bot = Client(
     "my_bot",
     api_id=API_ID,
@@ -59,4 +36,4 @@ colab_bot = Client(
     bot_token=BOT_TOKEN,
 )
 
-log.info("Pyrogram Client initialized")
+logging.info("✅ colab_bot client created")
