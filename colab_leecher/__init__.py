@@ -39,7 +39,7 @@ API_ID = int(credentials["API_ID"])
 API_HASH = str(credentials["API_HASH"])
 BOT_TOKEN = str(credentials["BOT_TOKEN"])
 OWNER = int(credentials["USER_ID"])
-DUMP_ID = int(credentials["DUMP_ID"])
+DUMP_ID = str(credentials["DUMP_ID"])
 
 log.info("Credentials loaded successfully")
 
