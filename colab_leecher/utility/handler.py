@@ -10,12 +10,8 @@ from datetime import datetime
 from os import makedirs, path as ospath
 from colab_leecher.uploader.telegram import upload_file
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from colab_leecher.utility.variables import (
-    BOT, MSG, BotTimes, Messages, Paths, Transfer,
-)
-from colab_leecher.utility.converters import (
-    archive, extract, videoConverter, sizeChecker,
-)
+from colab_leecher.utility.variables import BOT, MSG, BotTimes, Messages, Paths, Transfer
+from colab_leecher.utility.converters import archive, extract, videoConverter, sizeChecker
 from colab_leecher.utility.helper import (
     fileType, getSize, getTime, keyboard,
     shortFileName, sizeUnit, sysINFO, _pct_bar,
@@ -23,7 +19,6 @@ from colab_leecher.utility.helper import (
 
 
 async def Leech(folder_path: str, remove: bool):
-    # Convert videos if needed
     files = [str(p) for p in pathlib.Path(folder_path).glob("**/*") if p.is_file()]
     for f in natsorted(files):
         fp = ospath.join(folder_path, f)
@@ -32,9 +27,8 @@ async def Leech(folder_path: str, remove: bool):
 
     Transfer.total_down_size = getSize(folder_path)
 
-    # Collect all files to upload so we know which is last
     files = natsorted([str(p) for p in pathlib.Path(folder_path).glob("**/*") if p.is_file()])
-    upload_queue = []  # list of (file_path, will_be_split)
+    upload_queue = []
 
     for f in files:
         file_path = ospath.join(folder_path, f)
@@ -42,15 +36,13 @@ async def Leech(folder_path: str, remove: bool):
         if leech:
             if ospath.exists(file_path) and remove:
                 os.remove(file_path)
-            parts = natsorted(os.listdir(Paths.temp_zpath))
-            for part in parts:
+            for part in natsorted(os.listdir(Paths.temp_zpath)):
                 upload_queue.append(("split", ospath.join(Paths.temp_zpath, part)))
         else:
             upload_queue.append(("single", file_path))
 
-    total_uploads = len(upload_queue)
-
-    split_cleanup_done = False
+    total_uploads    = len(upload_queue)
+    split_cleaned    = False
 
     for idx, (kind, file_path) in enumerate(upload_queue):
         is_last = (idx == total_uploads - 1)
@@ -61,8 +53,7 @@ async def Leech(folder_path: str, remove: bool):
             os.rename(file_path, new_path)
             BotTimes.current_time = time()
             Messages.status_head  = (
-                f"<b>📤 UPLOADING</b>  "
-                f"<i>{idx + 1}/{total_uploads}</i>\n\n"
+                f"📤 <b>UPLOADING</b>  <i>{idx+1} / {total_uploads}</i>\n\n"
                 f"<code>{file_name}</code>\n"
             )
             try:
@@ -74,24 +65,17 @@ async def Leech(folder_path: str, remove: bool):
             except Exception: pass
             await upload_file(new_path, file_name, is_last=is_last)
             Transfer.up_bytes.append(os.stat(new_path).st_size)
-
-            # Clean temp split folder after last split part
-            if is_last and not split_cleanup_done:
-                if ospath.exists(Paths.temp_zpath):
-                    shutil.rmtree(Paths.temp_zpath)
-                split_cleanup_done = True
-
-        else:  # single
-            if not ospath.exists(Paths.temp_files_dir):
-                makedirs(Paths.temp_files_dir)
-            if not remove:
-                file_path = shutil.copy(file_path, Paths.temp_files_dir)
-
+            if is_last and not split_cleaned:
+                if ospath.exists(Paths.temp_zpath): shutil.rmtree(Paths.temp_zpath)
+                split_cleaned = True
+        else:
+            if not ospath.exists(Paths.temp_files_dir): makedirs(Paths.temp_files_dir)
+            if not remove: file_path = shutil.copy(file_path, Paths.temp_files_dir)
             file_name = ospath.basename(file_path)
             new_path  = shortFileName(file_path)
             os.rename(file_path, new_path)
             BotTimes.current_time = time()
-            Messages.status_head  = f"<b>📤 UPLOADING</b>\n\n<code>{file_name}</code>\n"
+            Messages.status_head  = f"📤 <b>UPLOADING</b>\n\n<code>{file_name}</code>\n"
             try:
                 MSG.status_msg = await MSG.status_msg.edit_text(
                     text=Messages.task_msg + Messages.status_head
@@ -102,40 +86,33 @@ async def Leech(folder_path: str, remove: bool):
             file_size = os.stat(new_path).st_size
             await upload_file(new_path, file_name, is_last=is_last)
             Transfer.up_bytes.append(file_size)
-
-            if remove and ospath.exists(new_path):
-                os.remove(new_path)
+            if remove and ospath.exists(new_path): os.remove(new_path)
             elif not remove:
                 for fi in os.listdir(Paths.temp_files_dir):
                     os.remove(ospath.join(Paths.temp_files_dir, fi))
 
-    # Cleanup
-    if remove and ospath.exists(folder_path):
-        shutil.rmtree(folder_path)
+    if remove and ospath.exists(folder_path): shutil.rmtree(folder_path)
     for d in (Paths.thumbnail_ytdl, Paths.temp_files_dir):
-        if ospath.exists(d):
-            shutil.rmtree(d)
+        if ospath.exists(d): shutil.rmtree(d)
 
 
 async def Zip_Handler(down_path: str, is_split: bool, remove: bool):
-    Messages.status_head = f"<b>🗜️ COMPRESSING</b>\n\n<code>{Messages.download_name}</code>\n"
+    Messages.status_head = f"🗜 <b>COMPRESSING</b>\n\n<code>{Messages.download_name}</code>\n"
     try:
         MSG.status_msg = await MSG.status_msg.edit_text(
             text=Messages.task_msg + Messages.status_head + sysINFO(),
             reply_markup=keyboard(),
         )
     except Exception: pass
-    if not ospath.exists(Paths.temp_zpath):
-        makedirs(Paths.temp_zpath)
+    if not ospath.exists(Paths.temp_zpath): makedirs(Paths.temp_zpath)
     await archive(down_path, is_split, remove)
     await sleep(2)
     Transfer.total_down_size = getSize(Paths.temp_zpath)
-    if remove and ospath.exists(down_path):
-        shutil.rmtree(down_path)
+    if remove and ospath.exists(down_path): shutil.rmtree(down_path)
 
 
 async def Unzip_Handler(down_path: str, remove: bool):
-    Messages.status_head = f"<b>📂 EXTRACTING</b>\n\n<code>{Messages.download_name}</code>\n"
+    Messages.status_head = f"📂 <b>EXTRACTING</b>\n\n<code>{Messages.download_name}</code>\n"
     try:
         MSG.status_msg = await MSG.status_msg.edit_text(
             text=Messages.task_msg + Messages.status_head
@@ -146,8 +123,7 @@ async def Unzip_Handler(down_path: str, remove: bool):
     filenames = natsorted([str(p) for p in pathlib.Path(down_path).glob("**/*") if p.is_file()])
     for f in filenames:
         short_path = ospath.join(down_path, f)
-        if not ospath.exists(Paths.temp_unzip_path):
-            makedirs(Paths.temp_unzip_path)
+        if not ospath.exists(Paths.temp_unzip_path): makedirs(Paths.temp_unzip_path)
         _, ext = ospath.splitext(ospath.basename(f).lower())
         try:
             if ospath.exists(short_path):
@@ -157,18 +133,16 @@ async def Unzip_Handler(down_path: str, remove: bool):
                     shutil.copy(short_path, Paths.temp_unzip_path)
         except Exception as e:
             logging.warning(f"Unzip error: {e}")
-    if remove:
-        shutil.rmtree(down_path)
+    if remove: shutil.rmtree(down_path)
 
 
 async def cancelTask(reason: str):
     spent = getTime((datetime.now() - BotTimes.start_time).seconds)
     text  = (
-        "╔━━━━━━━━━━━━━━━━━━━━━━╗\n"
-        "║  ⛔  TASK  STOPPED   ║\n"
-        "╚━━━━━━━━━━━━━━━━━━━━━━╝\n\n"
-        f"  ❓ <b>Reason</b>  <i>{reason}</i>\n"
-        f"  ⏱  <b>Spent</b>   <code>{spent}</code>"
+        "⛔ <b>TASK STOPPED</b>\n"
+        "──────────────────\n\n"
+        f"❓  <b>Reason</b>  <i>{reason}</i>\n"
+        f"⏱  <b>Spent</b>   <code>{spent}</code>"
     )
     if BOT.State.task_going:
         try:
@@ -181,16 +155,10 @@ async def cancelTask(reason: str):
             try:
                 await MSG.status_msg.edit_text(text)
             except Exception:
-                try:
-                    await colab_bot.send_message(chat_id=OWNER, text=text)
-                except Exception:
-                    pass
+                try: await colab_bot.send_message(chat_id=OWNER, text=text)
+                except Exception: pass
 
 
 async def SendLogs(is_leech: bool):
-    """
-    All completion info is already on the video caption (✅ Done · name).
-    We only need to reset bot state here.
-    """
     BOT.State.started    = False
     BOT.State.task_going = False
