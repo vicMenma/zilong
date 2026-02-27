@@ -17,18 +17,18 @@ from colab_leecher.utility.helper import (
 )
 
 def _owner_only(m): return m.chat.id == OWNER
+def _ring(p): return "🟢" if p < 40 else ("🟡" if p < 70 else "🔴")
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 #  /start
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 @colab_bot.on_message(filters.command("start") & filters.private)
 async def start(client, message):
     await message.delete()
     await message.reply_text(
-        "╔━━━━━━━━━━━━━━━━━━━━━━╗\n"
-        "║  ⚡  ZILONG  BOT     ║\n"
-        "╚━━━━━━━━━━━━━━━━━━━━━━╝\n\n"
-        "🟢 <b>Online & Ready</b>\n\n"
+        "⚡ <b>ZILONG BOT</b>\n"
+        "──────────────────\n"
+        "🟢 Online &amp; Ready\n\n"
         "Send any <b>link</b>, <b>magnet</b> or <b>path</b>.\n"
         "💡 /help for commands",
         reply_markup=InlineKeyboardMarkup([[
@@ -36,60 +36,65 @@ async def start(client, message):
         ]])
     )
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 #  /help
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 @colab_bot.on_message(filters.command("help") & filters.private)
 async def help_command(client, message):
     text = (
-        "╔━━━━━━━━━━━━━━━━━━━━━━╗\n"
-        "║    📖  HELP CENTER   ║\n"
-        "╚━━━━━━━━━━━━━━━━━━━━━━╝\n\n"
-        "🔗 <b>Just send a link</b>\n"
-        "  HTTP/HTTPS · Magnet · GDrive\n"
-        "  Mega · YouTube · Telegram · Path\n\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "⚙️  /settings · /stats · /ping\n"
-        "    /cancel · /stop\n\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "🎛️ <b>Append to link:</b>\n"
-        "  <code>[name.ext]</code>  custom name\n"
-        "  <code>{pass}</code>      zip password\n"
-        "  <code>(pass)</code>      unzip password\n\n"
-        "🖼️  Send an <b>image</b> to set thumbnail"
+        "📖 <b>HELP CENTER</b>\n"
+        "──────────────────\n\n"
+        "🔗 <b>Supported sources</b>\n"
+        "  · HTTP / HTTPS\n"
+        "  · Magnet links\n"
+        "  · Google Drive\n"
+        "  · Mega.nz\n"
+        "  · YouTube / YTDL\n"
+        "  · Telegram links\n"
+        "  · Local paths\n\n"
+        "──────────────────\n"
+        "⚙️ <b>Commands</b>\n"
+        "  /settings  · /stats  · /ping\n"
+        "  /cancel  · /stop\n\n"
+        "──────────────────\n"
+        "🎛 <b>Append to link</b>\n"
+        "  <code>[name.ext]</code>  — custom name\n"
+        "  <code>{pass}</code>      — zip password\n"
+        "  <code>(pass)</code>      — unzip password\n\n"
+        "🖼 Send an <b>image</b> to set thumbnail"
     )
     msg = await message.reply_text(text)
     await sleep(90)
     await message_deleter(message, msg)
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 #  /stats
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 def _build_stats_text():
-    def ring(p): return "🟢" if p < 40 else ("🟡" if p < 70 else "🔴")
     cpu  = psutil.cpu_percent(interval=1)
     ram  = psutil.virtual_memory()
     disk = psutil.disk_usage("/")
     net  = psutil.net_io_counters()
     up_s = int((datetime.now() - datetime.fromtimestamp(psutil.boot_time())).total_seconds())
+    task = "🟠 Running" if BOT.State.task_going else "⚪ Idle"
     return (
-        "╔━━━━━━━━━━━━━━━━━━━━━━━╗\n"
-        "║   📊  SERVER  STATS   ║\n"
-        "╚━━━━━━━━━━━━━━━━━━━━━━━╝\n\n"
-        f"🖥  <b>OS</b>     <code>{platform.system()} {platform.release()}</code>\n"
-        f"🐍  <b>Python</b> <code>v{platform.python_version()}</code>\n"
-        f"⏱  <b>Uptime</b> <code>{getTime(up_s)}</code>\n"
-        f"🤖  <b>Task</b>   {'🟠 Running' if BOT.State.task_going else '⚪ Idle'}\n\n"
-        f"━━━━  CPU  ━━━━━━━━━━━━━\n"
-        f"{ring(cpu)} <code>[{_pct_bar(cpu,15)}]</code> <b>{cpu:.1f}%</b>\n\n"
-        f"━━━━  RAM  ━━━━━━━━━━━━━\n"
-        f"{ring(ram.percent)} <code>[{_pct_bar(ram.percent,15)}]</code> <b>{ram.percent:.1f}%</b>\n"
-        f"   Used <code>{sizeUnit(ram.used)}</code> · Free <code>{sizeUnit(ram.available)}</code>\n\n"
-        f"━━━━  DISK  ━━━━━━━━━━━━\n"
-        f"{ring(disk.percent)} <code>[{_pct_bar(disk.percent,15)}]</code> <b>{disk.percent:.1f}%</b>\n"
-        f"   Used <code>{sizeUnit(disk.used)}</code> · Free <code>{sizeUnit(disk.free)}</code>\n\n"
-        f"━━━━  NET  ━━━━━━━━━━━━━\n"
-        f"   ⬆️ <code>{sizeUnit(net.bytes_sent)}</code>  ⬇️ <code>{sizeUnit(net.bytes_recv)}</code>\n"
+        "📊 <b>SERVER STATS</b>\n"
+        "──────────────────\n\n"
+        f"🖥  <b>OS</b>      <code>{platform.system()} {platform.release()}</code>\n"
+        f"🐍  <b>Python</b>  <code>v{platform.python_version()}</code>\n"
+        f"⏱  <b>Uptime</b>  <code>{getTime(up_s)}</code>\n"
+        f"🤖  <b>Task</b>    {task}\n\n"
+        "── CPU ───────────────\n"
+        f"{_ring(cpu)}  <code>[{_pct_bar(cpu, 12)}]</code>  <b>{cpu:.1f}%</b>\n\n"
+        "── RAM ───────────────\n"
+        f"{_ring(ram.percent)}  <code>[{_pct_bar(ram.percent, 12)}]</code>  <b>{ram.percent:.1f}%</b>\n"
+        f"    Used <code>{sizeUnit(ram.used)}</code>  ·  Free <code>{sizeUnit(ram.available)}</code>\n\n"
+        "── Disk ──────────────\n"
+        f"{_ring(disk.percent)}  <code>[{_pct_bar(disk.percent, 12)}]</code>  <b>{disk.percent:.1f}%</b>\n"
+        f"    Used <code>{sizeUnit(disk.used)}</code>  ·  Free <code>{sizeUnit(disk.free)}</code>\n\n"
+        "── Network ───────────\n"
+        f"    ⬆️  <code>{sizeUnit(net.bytes_sent)}</code>\n"
+        f"    ⬇️  <code>{sizeUnit(net.bytes_recv)}</code>"
     )
 
 _STATS_KB = InlineKeyboardMarkup([[
@@ -103,33 +108,32 @@ async def stats(client, message):
     await message.delete()
     await message.reply_text(_build_stats_text(), reply_markup=_STATS_KB)
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 #  /ping
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 @colab_bot.on_message(filters.command("ping") & filters.private)
 async def ping(client, message):
     t0  = datetime.now()
     msg = await message.reply_text("⏳")
     ms  = (datetime.now() - t0).microseconds // 1000
-    if ms < 100:   q, fill = "🟢 Excellent", 15
-    elif ms < 300: q, fill = "🟡 Good",      10
-    elif ms < 700: q, fill = "🟠 Fair",       5
-    else:          q, fill = "🔴 Poor",        2
-    bar = "█" * fill + "░" * (15 - fill)
+    if ms < 100:   q, fill = "🟢 Excellent", 12
+    elif ms < 300: q, fill = "🟡 Good",       8
+    elif ms < 700: q, fill = "🟠 Fair",        4
+    else:          q, fill = "🔴 Poor",         1
+    bar = "█" * fill + "░" * (12 - fill)
     await msg.edit_text(
-        "╔━━━━━━━━━━━━━━━━━╗\n"
-        "║  🏓  P O N G !  ║\n"
-        "╚━━━━━━━━━━━━━━━━━╝\n\n"
+        "🏓 <b>PONG</b>\n"
+        "──────────────────\n\n"
         f"<code>[{bar}]</code>\n\n"
         f"⚡ <b>Latency</b>  <code>{ms} ms</code>\n"
-        f"📶 <b>Quality</b>  {q}\n"
+        f"📶 <b>Quality</b>  {q}"
     )
     await sleep(20)
     await message_deleter(message, msg)
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 #  Other commands
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 @colab_bot.on_message(filters.command("cancel") & filters.private)
 async def cancel_cmd(client, message):
     if not _owner_only(message): return
@@ -184,9 +188,9 @@ async def unzip_pswd(client, message):
         msg = await message.reply_text("✅ Unzip password set 🔓", quote=True)
     await sleep(15); await message_deleter(message, msg)
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 #  Prefix / Suffix replies
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 @colab_bot.on_message(filters.reply & filters.private)
 async def setPrefix(client, message):
     if BOT.State.prefix:
@@ -198,9 +202,9 @@ async def setPrefix(client, message):
         await send_settings(client, message, message.reply_to_message_id, False)
         await message.delete()
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#  AUTO DOWNLOAD — link stays in chat
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
+#  AUTO DOWNLOAD
+# ──────────────────────────────────────────────
 @colab_bot.on_message(filters.create(isLink) & ~filters.photo & filters.private)
 async def handle_url(client, message):
     if not _owner_only(message): return
@@ -233,18 +237,18 @@ async def handle_url(client, message):
 
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("📄 Regular",     callback_data="normal"),
-         InlineKeyboardButton("🗜️ Compress",    callback_data="zip")],
+         InlineKeyboardButton("🗜 Compress",     callback_data="zip")],
         [InlineKeyboardButton("📂 Extract",     callback_data="unzip"),
          InlineKeyboardButton("♻️ UnDoubleZip", callback_data="undzip")],
     ])
     await message.reply_text(
-        f"  {label} · <code>{n}</code> source(s)\n  <b>Choose mode:</b>",
+        f"{label}  ·  <code>{n}</code> source(s)\n<b>Choose mode:</b>",
         reply_markup=kb, quote=True,
     )
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 #  Callbacks
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 @colab_bot.on_callback_query()
 async def handle_options(client, callback_query):
     data = callback_query.data
@@ -256,7 +260,7 @@ async def handle_options(client, callback_query):
 
     if data in ["normal", "zip", "unzip", "undzip"]:
         BOT.Mode.type = data
-        await callback_query.message.delete()   # remove mode picker only
+        await callback_query.message.delete()
         MSG.status_msg = await colab_bot.send_message(
             chat_id=OWNER,
             text="⏳ <i>Starting...</i>",
@@ -274,24 +278,23 @@ async def handle_options(client, callback_query):
 
     if data == "video":
         kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("✂️ Split",     callback_data="split-true"),
-             InlineKeyboardButton("🗜️ Zip",       callback_data="split-false")],
-            [InlineKeyboardButton("🔄 Convert",   callback_data="convert-true"),
-             InlineKeyboardButton("🚫 Skip",      callback_data="convert-false")],
-            [InlineKeyboardButton("🎬 MP4",       callback_data="mp4"),
-             InlineKeyboardButton("📦 MKV",       callback_data="mkv")],
-            [InlineKeyboardButton("🔝 High",      callback_data="q-High"),
-             InlineKeyboardButton("📉 Low",       callback_data="q-Low")],
-            [InlineKeyboardButton("⏎ Back",       callback_data="back")],
+            [InlineKeyboardButton("✂️ Split",   callback_data="split-true"),
+             InlineKeyboardButton("🗜 Zip",      callback_data="split-false")],
+            [InlineKeyboardButton("🔄 Convert", callback_data="convert-true"),
+             InlineKeyboardButton("🚫 Skip",    callback_data="convert-false")],
+            [InlineKeyboardButton("🎬 MP4",     callback_data="mp4"),
+             InlineKeyboardButton("📦 MKV",     callback_data="mkv")],
+            [InlineKeyboardButton("🔝 High",    callback_data="q-High"),
+             InlineKeyboardButton("📉 Low",     callback_data="q-Low")],
+            [InlineKeyboardButton("⏎ Back",     callback_data="back")],
         ])
         await callback_query.message.edit_text(
-            "╔━━━━━━━━━━━━━━━━━━━━━╗\n"
-            "║  🎥  VIDEO SETTINGS  ║\n"
-            "╚━━━━━━━━━━━━━━━━━━━━━╝\n\n"
-            f"  Convert  <code>{BOT.Setting.convert_video}</code>\n"
-            f"  Split    <code>{BOT.Setting.split_video}</code>\n"
-            f"  Format   <code>{BOT.Options.video_out.upper()}</code>\n"
-            f"  Quality  <code>{BOT.Setting.convert_quality}</code>",
+            "🎥 <b>VIDEO SETTINGS</b>\n"
+            "──────────────────\n\n"
+            f"Convert  <code>{BOT.Setting.convert_video}</code>\n"
+            f"Split    <code>{BOT.Setting.split_video}</code>\n"
+            f"Format   <code>{BOT.Options.video_out.upper()}</code>\n"
+            f"Quality  <code>{BOT.Setting.convert_quality}</code>",
             reply_markup=kb)
     elif data == "caption":
         kb = InlineKeyboardMarkup([
@@ -303,16 +306,21 @@ async def handle_options(client, callback_query):
             [InlineKeyboardButton("⏎ Back",    callback_data="back")],
         ])
         await callback_query.message.edit_text(
-            f"✏️ <b>Caption Style</b>  current: <code>{BOT.Setting.caption}</code>",
+            "✏️ <b>CAPTION STYLE</b>\n"
+            "──────────────────\n\n"
+            f"Current: <code>{BOT.Setting.caption}</code>",
             reply_markup=kb)
     elif data == "thumb":
         kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🗑️ Delete", callback_data="del-thumb")],
-            [InlineKeyboardButton("⏎ Back",    callback_data="back")],
+            [InlineKeyboardButton("🗑 Delete", callback_data="del-thumb")],
+            [InlineKeyboardButton("⏎ Back",   callback_data="back")],
         ])
         await callback_query.message.edit_text(
-            f"🖼️ <b>Thumbnail</b>  {'✅ Set' if BOT.Setting.thumbnail else '❌ None'}\n"
-            "Send an image to update.", reply_markup=kb)
+            "🖼 <b>THUMBNAIL</b>\n"
+            "──────────────────\n\n"
+            f"Status: {'✅ Set' if BOT.Setting.thumbnail else '❌ None'}\n\n"
+            "Send an image to update.",
+            reply_markup=kb)
     elif data == "del-thumb":
         if BOT.Setting.thumbnail:
             try: os.remove(Paths.THMB_PATH)
@@ -329,7 +337,7 @@ async def handle_options(client, callback_query):
         r = data.split("-"); BOT.Options.caption = r[0]; BOT.Setting.caption = r[1]
         await send_settings(client, callback_query.message, callback_query.message.id, False)
     elif data in ["split-true","split-false"]:
-        BOT.Options.is_split = data == "split-true"
+        BOT.Options.is_split    = data == "split-true"
         BOT.Setting.split_video = "Split Videos" if data == "split-true" else "Zip Videos"
         await send_settings(client, callback_query.message, callback_query.message.id, False)
     elif data in ["convert-true","convert-false","mp4","mkv","q-High","q-Low"]:
@@ -353,9 +361,9 @@ async def handle_options(client, callback_query):
     elif data == "cancel":
         await cancelTask("User cancelled")
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 #  Photo → thumbnail
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ──────────────────────────────────────────────
 @colab_bot.on_message(filters.photo & filters.private)
 async def handle_image(client, message):
     msg = await message.reply_text("⏳ <i>Saving thumbnail...</i>")
