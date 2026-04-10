@@ -3,7 +3,9 @@ import logging
 import subprocess
 from datetime import datetime
 from colab_leecher.utility.helper import sizeUnit, status_bar
-from colab_leecher.utility.variables import BOT, Aria2c, Paths, Messages, BotTimes
+from colab_leecher.utility.variables import (
+    BOT, Aria2c, Paths, Messages, BotTimes, ProcessTracker, TaskInfo,
+)
 
 
 async def aria2_Download(link: str, num: int):
@@ -12,7 +14,12 @@ async def aria2_Download(link: str, num: int):
     BotTimes.task_start = datetime.now()
     Messages.status_head = f"<b>📥 DOWNLOADING FROM » </b><i>🔗Link {str(num).zfill(2)}</i>\n\n<b>🏷️ Name » </b><code>{name_d}</code>\n"
 
-    # Create a command to run aria2p with the link
+    # Update TaskInfo for /status panel
+    TaskInfo.set(
+        phase="download", engine="Aria2c",
+        filename=name_d, started_at=datetime.now().timestamp(),
+    )
+
     command = [
         "aria2c",
         "-x16",
@@ -25,24 +32,25 @@ async def aria2_Download(link: str, num: int):
         link,
     ]
 
-    # Run the command using subprocess.Popen
     proc = subprocess.Popen(
         command, bufsize=0, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
 
-    # Read and print output in real-time
+    # ── REGISTER PID so cancelTask() can kill it ──────────────
+    ProcessTracker.register(proc.pid, f"aria2c: {name_d[:30]}")
+
     while True:
-        output = proc.stdout.readline()  # type: ignore
+        output = proc.stdout.readline()
         if output == b"" and proc.poll() is not None:
             break
         if output:
-            # sys.stdout.write(output.decode("utf-8"))
-            # sys.stdout.flush()
             await on_output(output.decode("utf-8"))
 
-    # Retrieve exit code and any error output
+    # ── UNREGISTER when done ──────────────────────────────────
+    ProcessTracker.unregister(proc.pid)
+
     exit_code = proc.wait()
-    error_output = proc.stderr.read()  # type: ignore
+    error_output = proc.stderr.read()
     if exit_code != 0:
         if exit_code == 3:
             logging.error(f"The Resource was Not Found in {link}")
@@ -86,8 +94,8 @@ async def on_output(output: str):
     except Exception as do:
         logging.error(f"Could't Get Info Due to: {do}")
 
-    percentage = re.findall("\d+\.\d+|\d+", progress_percentage)[0]  # type: ignore
-    down = re.findall("\d+\.\d+|\d+", downloaded_bytes)[0]  # type: ignore
+    percentage = re.findall("\d+\.\d+|\d+", progress_percentage)[0]
+    down = re.findall("\d+\.\d+|\d+", downloaded_bytes)[0]
     down_unit = re.findall("[a-zA-Z]+", downloaded_bytes)[0]
     if "G" in down_unit:
         spd = 3
@@ -102,12 +110,18 @@ async def on_output(output: str):
 
     if elapsed_time_seconds >= 270 and not Aria2c.link_info:
         logging.error("Failed to get download information ! Probably dead link 💀")
-    # Only Do this if got Information
+
     if total_size != "0B":
-        # Calculate download speed
         Aria2c.link_info = True
-        current_speed = (float(down) * 1024**spd) / elapsed_time_seconds
+        current_speed = (float(down) * 1024**spd) / elapsed_time_seconds if elapsed_time_seconds else 0
         speed_string = f"{sizeUnit(current_speed)}/s"
+
+        # Update TaskInfo for /status
+        TaskInfo.set(
+            percentage=float(percentage),
+            speed=speed_string,
+            eta=eta,
+        )
 
         await status_bar(
             Messages.status_head,
