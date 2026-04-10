@@ -86,7 +86,6 @@ class Paths:
     access_token = "/content/token.pickle"
 
 
-
 class Messages:
     caution_msg = "\n\n<i>💖 When I'm Doin This, Do Something Else ! <b>Because, Time Is Precious ✨</b></i>"
     download_name = ""
@@ -102,7 +101,6 @@ class MSG:
     status_msg = Message(id=2)
 
 
-
 class Aria2c:
     link_info = False
     pic_dwn_url = "https://picsum.photos/900/600"
@@ -110,3 +108,109 @@ class Aria2c:
 
 class Gdrive:
     service = None
+
+
+# ═════════════════════════════════════════════════════════════
+# ProcessTracker — tracks ALL subprocesses so /cancel kills them
+# ═════════════════════════════════════════════════════════════
+
+class ProcessTracker:
+    """
+    Global registry of running subprocess PIDs.
+    When cancelTask() fires, it kills EVERY tracked process — not just
+    the asyncio task. This is why the old cancel was broken: BOT.TASK.cancel()
+    only cancelled the Python coroutine, but aria2c/ffmpeg/yt-dlp kept running
+    as orphan processes eating CPU and disk.
+
+    Usage:
+        proc = subprocess.Popen(...)
+        ProcessTracker.register(proc.pid, "aria2c")
+        ...
+        ProcessTracker.kill_all()  # called by cancelTask()
+    """
+    _pids: dict = {}  # pid → label
+
+    @classmethod
+    def register(cls, pid: int, label: str = "") -> None:
+        cls._pids[pid] = label
+
+    @classmethod
+    def unregister(cls, pid: int) -> None:
+        cls._pids.pop(pid, None)
+
+    @classmethod
+    def kill_all(cls) -> int:
+        """Kill every tracked process. Returns count killed."""
+        import os, signal, logging
+        killed = 0
+        for pid, label in list(cls._pids.items()):
+            try:
+                os.kill(pid, signal.SIGTERM)
+                killed += 1
+                logging.info(f"[ProcessTracker] Killed PID {pid} ({label})")
+            except ProcessLookupError:
+                pass
+            except Exception as e:
+                logging.warning(f"[ProcessTracker] Kill PID {pid}: {e}")
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                    killed += 1
+                except Exception:
+                    pass
+        cls._pids.clear()
+        return killed
+
+    @classmethod
+    def active(cls) -> list:
+        """Return list of (pid, label) for alive processes."""
+        import os
+        alive = []
+        dead = []
+        for pid, label in cls._pids.items():
+            try:
+                os.kill(pid, 0)  # check if alive
+                alive.append((pid, label))
+            except ProcessLookupError:
+                dead.append(pid)
+        for p in dead:
+            cls._pids.pop(p, None)
+        return alive
+
+    @classmethod
+    def count(cls) -> int:
+        return len(cls.active())
+
+
+# ═════════════════════════════════════════════════════════════
+# TaskInfo — live task state for /status panel
+# ═════════════════════════════════════════════════════════════
+
+class TaskInfo:
+    """Structured live task state — updated by download/upload code."""
+    phase:      str   = "idle"       # idle | download | upload | process | zip | extract
+    engine:     str   = ""           # aria2c | yt-dlp | gdrive | telegram | ffmpeg
+    filename:   str   = ""
+    done_bytes: int   = 0
+    total_bytes:int   = 0
+    speed:      str   = ""
+    eta:        str   = ""
+    percentage: float = 0.0
+    started_at: float = 0.0
+
+    @classmethod
+    def reset(cls):
+        cls.phase = "idle"
+        cls.engine = ""
+        cls.filename = ""
+        cls.done_bytes = 0
+        cls.total_bytes = 0
+        cls.speed = ""
+        cls.eta = ""
+        cls.percentage = 0.0
+        cls.started_at = 0.0
+
+    @classmethod
+    def set(cls, **kw):
+        for k, v in kw.items():
+            if hasattr(cls, k):
+                setattr(cls, k, v)

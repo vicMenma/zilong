@@ -10,7 +10,9 @@ from datetime import datetime
 from os import makedirs, path as ospath
 from colab_leecher.uploader.telegram import upload_file
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from colab_leecher.utility.variables import BOT, MSG, BotTimes, Messages, Paths, Transfer
+from colab_leecher.utility.variables import (
+    BOT, MSG, BotTimes, Messages, Paths, Transfer, ProcessTracker, TaskInfo,
+)
 from colab_leecher.utility.converters import archive, extract, videoConverter, sizeChecker
 from colab_leecher.utility.helper import (
     fileType, getSize, getTime, keyboard,
@@ -46,6 +48,12 @@ async def Leech(folder_path: str, remove: bool):
 
     for idx, (kind, file_path) in enumerate(upload_queue):
         is_last = (idx == total_uploads - 1)
+
+        # Update TaskInfo for /status panel
+        TaskInfo.set(
+            phase="upload", engine="Pyrofork",
+            filename=ospath.basename(file_path),
+        )
 
         if kind == "split":
             file_name = ospath.basename(file_path)
@@ -98,6 +106,7 @@ async def Leech(folder_path: str, remove: bool):
 
 async def Zip_Handler(down_path: str, is_split: bool, remove: bool):
     Messages.status_head = f"🗜 <b>COMPRESSING</b>\n\n<code>{Messages.download_name}</code>\n"
+    TaskInfo.set(phase="process", engine="zip", filename=Messages.download_name)
     try:
         MSG.status_msg = await MSG.status_msg.edit_text(
             text=Messages.task_msg + Messages.status_head + sysINFO(),
@@ -113,6 +122,7 @@ async def Zip_Handler(down_path: str, is_split: bool, remove: bool):
 
 async def Unzip_Handler(down_path: str, remove: bool):
     Messages.status_head = f"📂 <b>EXTRACTING</b>\n\n<code>{Messages.download_name}</code>\n"
+    TaskInfo.set(phase="process", engine="unzip", filename=Messages.download_name)
     try:
         MSG.status_msg = await MSG.status_msg.edit_text(
             text=Messages.task_msg + Messages.status_head
@@ -136,29 +146,81 @@ async def Unzip_Handler(down_path: str, remove: bool):
     if remove: shutil.rmtree(down_path)
 
 
+# ═════════════════════════════════════════════════════════════
+# cancelTask — FIXED: now kills ALL subprocesses
+# ═════════════════════════════════════════════════════════════
+
 async def cancelTask(reason: str):
+    """
+    Kill the running task AND every subprocess it spawned.
+
+    The old version only called BOT.TASK.cancel() which cancels the
+    Python asyncio coroutine but leaves aria2c/ffmpeg/yt-dlp running
+    as orphan processes. ProcessTracker.kill_all() sends SIGTERM to
+    every registered PID — this is why tasks actually stop now.
+    """
     spent = getTime((datetime.now() - BotTimes.start_time).seconds)
-    text  = (
-        "⛔ <b>TASK STOPPED</b>\n"
-        "──────────────────\n\n"
-        f"❓  <b>Reason</b>  <i>{reason}</i>\n"
-        f"⏱  <b>Spent</b>   <code>{spent}</code>"
-    )
+
+    # 1. Kill ALL tracked subprocesses (aria2c, ffmpeg, yt-dlp, etc.)
+    killed = ProcessTracker.kill_all()
+
+    # 2. Cancel the asyncio task
     if BOT.State.task_going:
         try:
-            BOT.TASK.cancel()           # type: ignore
-            shutil.rmtree(Paths.WORK_PATH)
+            if BOT.TASK and not BOT.TASK.done():
+                BOT.TASK.cancel()
         except Exception as e:
-            logging.warning(f"Cancel cleanup: {e}")
-        finally:
-            BOT.State.task_going = False
-            try:
-                await MSG.status_msg.edit_text(text)
-            except Exception:
-                try: await colab_bot.send_message(chat_id=OWNER, text=text)
-                except Exception: pass
+            logging.warning(f"Task cancel: {e}")
+
+    # 3. Also kill any stray aria2c/ffmpeg processes by name
+    _kill_stray_processes()
+
+    # 4. Cleanup work directory
+    try:
+        if ospath.exists(Paths.WORK_PATH):
+            shutil.rmtree(Paths.WORK_PATH)
+    except Exception as e:
+        logging.warning(f"Cancel cleanup: {e}")
+
+    # 5. Reset state
+    BOT.State.task_going = False
+    TaskInfo.reset()
+
+    text = (
+        "⛔ <b>TASK CANCELLED</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"❓  <b>Reason</b>   <i>{reason}</i>\n"
+        f"⏱  <b>Spent</b>    <code>{spent}</code>\n"
+        f"💀  <b>Killed</b>   <code>{killed} process(es)</code>\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "<i>All downloads, uploads and processing stopped.</i>"
+    )
+
+    try:
+        await MSG.status_msg.edit_text(text)
+    except Exception:
+        try:
+            await colab_bot.send_message(chat_id=OWNER, text=text)
+        except Exception:
+            pass
+
+    logging.info(f"[Cancel] Task cancelled: {reason} — killed {killed} procs")
+
+
+def _kill_stray_processes():
+    """Kill any aria2c/ffmpeg/yt-dlp that might have been missed."""
+    import subprocess
+    for name in ("aria2c", "ffmpeg", "ffprobe"):
+        try:
+            subprocess.run(
+                ["pkill", "-f", name],
+                capture_output=True, timeout=5,
+            )
+        except Exception:
+            pass
 
 
 async def SendLogs(is_leech: bool):
     BOT.State.started    = False
     BOT.State.task_going = False
+    TaskInfo.reset()
